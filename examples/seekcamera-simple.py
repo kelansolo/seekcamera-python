@@ -18,6 +18,7 @@
 from time import sleep
 
 import numpy as np
+import datetime as dt
 
 from seekcamera import (
     SeekCameraIOType,
@@ -99,12 +100,17 @@ def main():
     # Create a context structure responsible for managing all connected USB cameras.
     # Cameras with other IO types can be managed by using a bitwise or of the
     # SeekCameraIOType enum cases.
+    
+    runtime = 5
     with SeekCameraManager(SeekCameraIOType.USB) as manager:
         # Start listening for events.
         manager.register_event_callback(on_event)
-
+        start = dt.datetime.now()
         while True:
             sleep(1.0)
+            if dt.datetime.now() >= start + dt.timedelta(seconds=runtime):
+                break
+            
 
 
 if __name__ == "__main__":
