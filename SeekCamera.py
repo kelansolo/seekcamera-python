@@ -25,8 +25,11 @@ from seekcamera import (
     SeekCameraManager,
     SeekCameraManagerEvent,
     SeekCameraFrameFormat,
+    SeekFrame
 )
-
+start = -1
+stop = -1
+timestamps = []
 
 def on_frame(camera, camera_frame, file):
     """Async callback fired whenever a new frame is available.
@@ -43,7 +46,10 @@ def on_frame(camera, camera_frame, file):
         but in this case it is a reference to the open CSV file to which
         to log data.
     """
+    global timestamps
     frame = camera_frame.thermography_float
+    
+    timestamps.append(frame.header.timestamp_utc_ns)
 
     print(
         "frame available: {cid} (size: {w}x{h})".format(
@@ -53,7 +59,6 @@ def on_frame(camera, camera_frame, file):
 
     # Append the frame to the CSV file.
     np.savetxt(file, frame.data, fmt="%.1f")
-
 
 def on_event(camera, event_type, event_status, _user_data):
     """Async callback fired whenever a camera event occurs.
@@ -71,8 +76,15 @@ def on_event(camera, event_type, event_status, _user_data):
         User defined data passed to the callback. This can be anything
         but in this case it is None.
     """
+    global stop
+    global start
     print("{}: {}".format(str(event_type), camera.chipid))
-
+    # try:
+    current_emissivity = camera.scene_emissivity
+    print(f"Old emissivity: {current_emissivity}")
+    camera.scene_emissivity = 0.75
+    current_emissivity = camera.scene_emissivity
+    print(f"New emissivity: {current_emissivity}")
     if event_type == SeekCameraManagerEvent.CONNECT:
         # Open a new CSV file with the unique camera chip ID embedded.
         try:
@@ -84,34 +96,51 @@ def on_event(camera, event_type, event_status, _user_data):
         # Start streaming data and provide a custom callback to be called
         # every time a new frame is received.
         camera.register_frame_available_callback(on_frame, file)
+        start = dt.datetime.now()
+
         camera.capture_session_start(SeekCameraFrameFormat.THERMOGRAPHY_FLOAT)
 
-    elif event_type == SeekCameraManagerEvent.DISCONNECT:
+
+    elif event_type == SeekCameraManagerEvent.DISCONNECT:       
+        # stop = dt.datetime.now()
         camera.capture_session_stop()
 
     elif event_type == SeekCameraManagerEvent.ERROR:
         print("{}: {}".format(str(event_status), camera.chipid))
 
     elif event_type == SeekCameraManagerEvent.READY_TO_PAIR:
-        return
-
+        return 
 
 def main():
     # Create a context structure responsible for managing all connected USB cameras.
     # Cameras with other IO types can be managed by using a bitwise or of the
     # SeekCameraIOType enum cases.
-    
-    runtime = 5
+    runtime = 3
+    global start
+    global stop
     with SeekCameraManager(SeekCameraIOType.USB) as manager:
         # Start listening for events.
         manager.register_event_callback(on_event)
-        start = dt.datetime.now()
-        while True:
-            sleep(1.0)
-            if dt.datetime.now() >= start + dt.timedelta(seconds=runtime):
-                break
-            
-
+        while dt.datetime.now() - start <= dt.timedelta(seconds=5):
+            sleep(0.1)
 
 if __name__ == "__main__":
     main()
+
+def get_data(runtime):
+    # Create a context structure responsible for managing all connected USB cameras.
+    # Cameras with other IO types can be managed by using a bitwise or of the
+    # SeekCameraIOType enum cases.
+    global start
+    global stop
+    global timestamps
+    start = -1
+    stop = -1
+    timestamps = []
+    with SeekCameraManager(SeekCameraIOType.USB) as manager:
+        # Start listening for events.
+        manager.register_event_callback(on_event)
+        if True:
+            sleep(runtime)
+        stop = dt.datetime.now()
+    return(timestamps)

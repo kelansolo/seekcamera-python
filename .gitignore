@@ -130,3 +130,10 @@ dmypy.json
 
 # VSCode
 .vscode/
+
+#KS
+Misc/
+To_plot/
+examples/
+./thermography-E5D608D31715.csv
+
