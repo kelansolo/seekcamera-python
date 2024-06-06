@@ -14,3 +14,4 @@ This code is modified from the Seek Camera SDK: [Seek Camera Python SDK](https:/
 - **SeekCamera.py**: Code used to run the camera (Seek - modified by KS)
 - **Record_Data.ipynb**: Separate notebook for recording new data (KS)
 - **thermography-E5D608D31715.csv**: CSV with last recorded data
+- **Microheaters_020524.ino**: Arduino code
